@@ -12,6 +12,10 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.send('OK');
+});
+
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', protectedRoutes);
