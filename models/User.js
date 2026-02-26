@@ -40,6 +40,32 @@ static async create({ email, password, googleId, name, isVerified = false }) {
   static async updatePassword(userId, hashedPassword) {
     await pool.execute('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, userId]);
   }
+  // Add to existing User class
+
+static async updateCredits(userId, amount) {
+  // amount can be positive (add) or negative (deduct)
+  await pool.execute(
+    'UPDATE users SET credits = credits + ? WHERE id = ?',
+    [amount, userId]
+  );
+}
+
+static async getCredits(userId) {
+  const [rows] = await pool.execute('SELECT credits FROM users WHERE id = ?', [userId]);
+  return rows[0]?.credits;
+}
+
+static async generateReferralCode(userId) {
+  // Generate a random 8-character alphanumeric code
+  const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+  await pool.execute('UPDATE users SET referral_code = ? WHERE id = ?', [code, userId]);
+  return code;
+}
+
+static async findByReferralCode(code) {
+  const [rows] = await pool.execute('SELECT id FROM users WHERE referral_code = ?', [code]);
+  return rows[0];
+}
 }
 
 module.exports = User;
