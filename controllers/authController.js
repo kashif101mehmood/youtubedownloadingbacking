@@ -10,7 +10,8 @@ const { verifyGoogleToken } = require('../services/oauthService');
 // Register with email/password
 exports.register = async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, refCode } = req.body; // add refCode
+    // const { email, password, name } = req.body;
 
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
@@ -19,12 +20,34 @@ exports.register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Inside register, after creating user
+
+    // ... existing validation ...
+
+    // Create user (with referredBy = null initially)
+    let referredBy = null;
+    if (refCode) {
+      const referrer = await User.findByReferralCode(refCode);
+      if (referrer) {
+        referredBy = referrer.id;
+      }
+    }
+
     const userId = await User.create({
       email,
       password: hashedPassword,
       name,
       isVerified: false,
+      referredBy: referredBy
     });
+    await User.generateReferralCode(userId);
+
+    // If there is a valid referrer, give them 100 credits
+    if (referredBy) {
+      await User.updateCredits(referredBy, 100);
+    }
+
+    // ... rest (send verification email)
 
     const token = await VerificationToken.create(userId);
     await sendVerificationEmail(email, token);

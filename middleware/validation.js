@@ -12,6 +12,7 @@ const registerValidation = [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 6 }),
   body('name').optional().trim().escape(),
+  body('refCode').optional().isString().trim().escape() // new
 ];
 
 const loginValidation = [

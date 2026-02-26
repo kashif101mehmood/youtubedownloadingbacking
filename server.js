@@ -4,6 +4,12 @@ const cors = require('cors');
 const helmet = require('helmet');
 const authRoutes = require('./routes/auth');
 const protectedRoutes = require('./routes/protected');
+const creditRoutes = require('./routes/credits');
+const referralRoutes = require('./routes/referral');
+const downloadRoutes = require('./routes/downloadRoutes');
+// ...
+
+
 
 const app = express();
 
@@ -19,6 +25,9 @@ app.get('/', (req, res) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/api', protectedRoutes);
+app.use('/api/credits', creditRoutes);
+app.use('/api/referral', referralRoutes);
+app.use('/api/download', downloadRoutes);
 
 // Test database connection
 const pool = require('./config/database');
