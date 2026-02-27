@@ -1,25 +1,7 @@
+const pool = require('../config/database');
 const VerificationToken = require('../models/VerificationToken');
 const User = require('../models/User');
 const { sendVerificationEmail } = require('../services/emailService');
-
-exports.verifyEmail = async (req, res) => {
-  try {
-    const { token } = req.query;
-
-    const tokenData = await VerificationToken.findByToken(token);
-    if (!tokenData) {
-      return res.status(400).json({ error: 'Invalid or expired token' });
-    }
-
-    await User.verify(tokenData.user_id);
-    await VerificationToken.delete(token);
-
-    res.json({ message: 'Email verified successfully. You can now log in.' });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Server error' });
-  }
-};
 
 exports.resendVerification = async (req, res) => {
   try {
@@ -33,10 +15,31 @@ exports.resendVerification = async (req, res) => {
       return res.status(400).json({ error: 'Email already verified' });
     }
 
-    const token = await VerificationToken.create(user.id);
-    await sendVerificationEmail(email, token);
+    // Check cooldown (2 minutes = 120 seconds)
+    if (user.last_verification_sent_at) {
+      const now = new Date();
+      const lastSent = new Date(user.last_verification_sent_at);
+      const diffSeconds = (now - lastSent) / 1000;
+      if (diffSeconds < 120) {
+        const waitSeconds = Math.ceil(120 - diffSeconds);
+        return res.status(429).json({
+          error: `Please wait ${waitSeconds} seconds before requesting another email.`
+        });
+      }
+    }
 
-    res.json({ message: 'Verification email resent' });
+    // Delete old tokens (optional)
+    // ... you may want to delete previous tokens for this user
+
+    const token = await VerificationToken.create(user.id);
+    // Update last_verification_sent_at
+    await pool.execute(
+      'UPDATE users SET last_verification_sent_at = NOW() WHERE id = ?',
+      [user.id]
+    );
+    await sendVerificationEmail(email, token, user.name);
+
+    res.json({ message: 'Verification email resent. Please check your inbox.' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

@@ -10,21 +10,18 @@ const { verifyGoogleToken } = require('../services/oauthService');
 // Register with email/password
 exports.register = async (req, res) => {
   try {
-    const { email, password, name, refCode } = req.body; // add refCode
-    // const { email, password, name } = req.body;
+    const { email, password, name, refCode } = req.body;
 
+    // Check if user already exists
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(400).json({ error: 'Email already registered' });
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Inside register, after creating user
-
-    // ... existing validation ...
-
-    // Create user (with referredBy = null initially)
+    // Determine referrer if any
     let referredBy = null;
     if (refCode) {
       const referrer = await User.findByReferralCode(refCode);
@@ -33,6 +30,7 @@ exports.register = async (req, res) => {
       }
     }
 
+    // Create the new user (credits default to 100, thanks to our model)
     const userId = await User.create({
       email,
       password: hashedPassword,
@@ -40,19 +38,27 @@ exports.register = async (req, res) => {
       isVerified: false,
       referredBy: referredBy
     });
+
+    // Generate a referral code for the new user (so they can refer others)
     await User.generateReferralCode(userId);
 
-    // If there is a valid referrer, give them 100 credits
+    // If this user was referred, give the referrer 100 credits
     if (referredBy) {
-      await User.updateCredits(referredBy, 100);
+      await User.updateCredits(referredBy, 100, null, `Referral bonus for new user ${userId}`);
     }
 
-    // ... rest (send verification email)
-
+    // Create email verification token
     const token = await VerificationToken.create(userId);
-    await sendVerificationEmail(email, token);
 
-    res.status(201).json({ message: 'Registration successful. Please check your email to verify your account.' });
+    // Record the time this verification email was sent (for cooldown logic)
+    await User.updateLastVerificationSent(userId);
+
+    // Send verification email with the user's name
+    await sendVerificationEmail(email, token, name);
+
+    res.status(201).json({ 
+      message: 'Registration successful. Please check your email to verify your account.' 
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

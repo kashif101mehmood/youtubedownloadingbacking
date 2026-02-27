@@ -67,6 +67,9 @@ static async findByReferralCode(code) {
   const [rows] = await pool.execute('SELECT id FROM users WHERE referral_code = ?', [code]);
   return rows[0];
 }
+static async updateLastVerificationSent(userId) {
+  await pool.execute('UPDATE users SET last_verification_sent_at = NOW() WHERE id = ?', [userId]);
+}
 static async updateCredits(userId, amount, appId = null, description = '') {
   const connection = await pool.getConnection();
   try {
