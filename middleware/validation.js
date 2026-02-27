@@ -12,12 +12,12 @@ const registerValidation = [
   body('email').isEmail().normalizeEmail(),
   body('password').isLength({ min: 6 }),
   body('name').optional().trim().escape(),
-  body('refCode').optional().isString().trim().escape() // new
+  body('refCode').optional().isString().trim().escape()
 ];
 
 const loginValidation = [
   body('email').isEmail().normalizeEmail(),
-  body('password').notEmpty(),
+  body('password').notEmpty()
 ];
 
 module.exports = { validate, registerValidation, loginValidation };

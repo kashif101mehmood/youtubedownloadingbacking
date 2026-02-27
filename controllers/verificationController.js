@@ -45,3 +45,22 @@ exports.resendVerification = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.query;
+    const tokenData = await VerificationToken.findByToken(token);
+    if (!tokenData) {
+      return res.status(400).json({ error: 'Invalid or expired token' });
+    }
+    await User.verify(tokenData.user_id);
+    await VerificationToken.delete(token);
+    res.json({ message: 'Email verified successfully. You can now log in.' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+// ... (keep your existing resendVerification)

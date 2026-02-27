@@ -43,14 +43,6 @@ static async create({ email, password, googleId, name, isVerified = false }) {
   }
   // Add to existing User class
 
-static async updateCredits(userId, amount) {
-  // amount can be positive (add) or negative (deduct)
-  await pool.execute(
-    'UPDATE users SET credits = credits + ? WHERE id = ?',
-    [amount, userId]
-  );
-}
-
 static async getCredits(userId) {
   const [rows] = await pool.execute('SELECT credits FROM users WHERE id = ?', [userId]);
   return rows[0]?.credits;
