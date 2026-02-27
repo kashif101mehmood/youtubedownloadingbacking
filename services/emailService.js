@@ -10,7 +10,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const APP_URL = process.env.APP_URL || 'http://localhost:3000'; // fallback for local
+const APP_URL = process.env.APP_URL || 'https://kashifuet--kashifuet.replit.app'; // fallback for local
 
 async function sendVerificationEmail(toEmail, token) {
   const verificationLink = `${APP_URL}/auth/verify-email?token=${token}`;
